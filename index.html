@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENDER | Smart Cold-Chain Integrity & Live Tracking System</title>
+  <meta name="description"
+    content="Professional pharmaceutical cold-chain integrity monitoring and live GPS tracking system for medical shipments.">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Leaflet CSS for Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- html2pdf.js for Client-Side PDF Generation & Auto-Save -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Custom Stylesheet (Galaxy Theme) -->
+  <link rel="stylesheet" href="/src/css/style.css">
+</head>
+
+<body>
+
+  <!-- Background Galaxy Particle Stars Canvas -->
+  <canvas id="snow-canvas"></canvas>
+
+  <!-- ==========================================================================
+       UNIFIED LOGIN OVERLAY PAGE (SENDER & RECEIVER)
+       ========================================================================== -->
+  <div class="login-overlay" id="login-overlay">
+    <div class="login-card-wrapper">
+
+      <!-- Left Panel: Brand & Active Role Status -->
+      <div class="login-visual-panel">
+        <div class="login-brand-centered">
+          <div class="login-brand-icon-lg" id="visual-brand-icon">📦</div>
+          <h1 class="login-project-title" id="visual-portal-title">SENDER PORTAL</h1>
+          <p class="login-project-subtitle">Cold-Chain Live Tracking</p>
+          <div style="margin-top: 16px; font-size: 13px; color: var(--color-primary); background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.25); padding: 8px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;" id="login-role-badge">
+            <span class="status-dot" style="background: var(--color-primary); box-shadow: 0 0 8px var(--color-primary);"></span>
+            <span id="role-badge-text">Sender Mode: Send & Track</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Login Form Panel -->
+      <div class="login-form-panel">
+        <div class="login-header-group">
+          <h2 id="login-portal-heading">Portal Login</h2>
+          <p id="login-portal-subheading">Select role and sign in with your credentials</p>
+        </div>
+
+        <!-- Role Selector Buttons -->
+        <div class="portal-role-selector">
+          <button type="button" class="role-btn active" id="role-sender-btn" data-role="sender">
+            <i data-lucide="package"></i>
+            <span>📦 Sender</span>
+          </button>
+          <button type="button" class="role-btn" id="role-receiver-btn" data-role="receiver">
+            <i data-lucide="hospital"></i>
+            <span>🏥 Receiver</span>
+          </button>
+        </div>
+
+        <!-- Auth Mode Switcher (Sign In vs Create Account) -->
+        <div class="auth-mode-tabs" id="auth-mode-tabs">
+          <button type="button" class="auth-mode-tab active" id="tab-mode-signin">
+            <i data-lucide="log-in" style="width: 14px; height: 14px;"></i>
+            <span>Sign In</span>
+          </button>
+          <button type="button" class="auth-mode-tab" id="tab-mode-signup">
+            <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
+            <span>Create Account</span>
+          </button>
+        </div>
+
+        <!-- Continue with Google Button -->
+        <button type="button" class="btn-google-auth" id="btn-google-login">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        <div class="auth-divider">
+          <span>or continue with email</span>
+        </div>
+
+        <!-- Role Explanation Helper Box -->
+        <div class="portal-explanation-box" id="portal-explanation-box">
+          💡 <strong>Sender Portal:</strong> Dispatch medical cargo, monitor live telemetry & compliance.
+        </div>
+
+        <form class="login-form" id="login-form" data-auth-mode="signin">
+          <input type="hidden" id="selected-role" value="sender">
+
+          <!-- Sign Up Only: Full Name Field -->
+          <div class="form-group signup-only-field hidden">
+            <label for="signup-name">Full Name / Organization</label>
+            <div class="input-with-icon">
+              <i data-lucide="user"></i>
+              <input type="text" id="signup-name" placeholder="Dr. Ganesh Kumar / Pharma Logistics">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="login-email" id="login-email-label">Email Address</label>
+            <div class="input-with-icon">
+              <i data-lucide="mail"></i>
+              <input type="email" id="login-email" required placeholder="Enter your email address" autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="lock"></i>
+              <input type="password" id="login-password" required placeholder="Enter your password" autocomplete="current-password">
+              <button type="button" class="password-toggle-btn" data-target="login-password" title="Toggle password visibility">
+                <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sign Up Only: Confirm Password Field -->
+          <div class="form-group signup-only-field hidden">
+            <label for="signup-password-confirm">Confirm Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="shield-check"></i>
+              <input type="password" id="signup-password-confirm" placeholder="Re-enter password" autocomplete="new-password">
+              <button type="button" class="password-toggle-btn" data-target="signup-password-confirm" title="Toggle password visibility">
+                <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-options" id="forgot-pass-row">
+            <label class="remember-me">
+              <input type="checkbox" id="remember-me-checkbox" checked>
+              <span>Remember Me</span>
+            </label>
+            <a href="#" class="forgot-link" id="btn-forgot-pass">Forgot Password?</a>
+          </div>
+
+          <button type="submit" class="btn-primary" id="login-submit-btn">
+            <span id="login-btn-text">Sign In as Sender</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </form>
+
+        <p style="text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 14px;">
+          🔒 Secured with 256-bit GDP Cold-Chain Cryptography
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MAIN APP LAYOUT (SENDER DASHBOARD)
+       ========================================================================== -->
+  <div class="app-layout hidden" id="app-layout">
+
+    <!-- SENDER SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <i data-lucide="snowflake"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">SENDER</span>
+          <span class="brand-subtitle">Smart Cold-Chain</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- OVERVIEW -->
+        <div class="nav-group">
+          <div class="nav-group-title">OVERVIEW</div>
+          <a href="#dashboard" class="nav-item active" data-tab="dashboard">
+            <i data-lucide="home"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#tracking" class="nav-item" data-tab="tracking">
+            <i data-lucide="truck"></i>
+            <span>Live Tracking</span>
+          </a>
+        </div>
+
+        <!-- SHIPMENT -->
+        <div class="nav-group">
+          <div class="nav-group-title">SHIPMENT</div>
+          <a href="#shipment" class="nav-item" data-tab="shipment">
+            <i data-lucide="package"></i>
+            <span>My Shipment</span>
+          </a>
+          <a href="#create-shipment" class="nav-item" data-tab="create-shipment">
+            <i data-lucide="plus-circle"></i>
+            <span>Create Shipment</span>
+          </a>
+        </div>
+
+        <!-- MONITORING -->
+        <div class="nav-group">
+          <div class="nav-group-title">MONITORING</div>
+          <a href="#smart-box" class="nav-item" data-tab="smart-box">
+            <i data-lucide="box"></i>
+            <span>Smart Box</span>
+          </a>
+          <a href="#alerts" class="nav-item" data-tab="alerts">
+            <i data-lucide="alert-triangle"></i>
+            <span>Alerts</span>
+            <span class="nav-badge" id="sidebar-alert-badge">2</span>
+          </a>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div class="nav-group">
+          <div class="nav-group-title">ANALYTICS</div>
+          <a href="#analytics-all" class="nav-item" data-tab="analytics-all">
+            <i data-lucide="bar-chart-3"></i>
+            <span>All-in-One Analytics</span>
+          </a>
+          <a href="#temperature-analytics" class="nav-item" data-tab="temperature-analytics">
+            <i data-lucide="thermometer-snowflake"></i>
+            <span>Temperature</span>
+          </a>
+          <a href="#sensor-analysis" class="nav-item" data-tab="sensor-analysis">
+            <i data-lucide="cpu"></i>
+            <span>Sensor Analysis</span>
+          </a>
+        </div>
+
+        <!-- REPORTS -->
+        <div class="nav-group">
+          <div class="nav-group-title">REPORTS</div>
+          <a href="#reports" class="nav-item" data-tab="reports">
+            <i data-lucide="file-text"></i>
+            <span>Reports</span>
+          </a>
+        </div>
+
+        <!-- ACCOUNT -->
+        <div class="nav-group">
+          <div class="nav-group-title">ACCOUNT</div>
+          <a href="#profile" class="nav-item" data-tab="profile">
+            <i data-lucide="user"></i>
+            <span>Profile</span>
+          </a>
+          <a href="#settings" class="nav-item" data-tab="settings">
+            <i data-lucide="settings"></i>
+            <span>Settings & Thresholds</span>
+          </a>
+          <a href="#" class="nav-item" id="nav-logout">
+            <i data-lucide="log-out"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-wrapper">
+
+      <!-- TOP HEADER -->
+      <header class="top-header">
+
+        <div class="header-actions">
+          <!-- Live ESP8266 Hardware Status Pill -->
+          <div class="hardware-pill-badge" id="hardware-pill-badge" style="display: flex; align-items: center; gap: 8px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 20px; padding: 6px 14px; font-size: 12px; margin-right: 8px;">
+            <span class="status-dot" id="header-hw-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #00f0ff; box-shadow: 0 0 8px #00f0ff;"></span>
+            <span id="header-hw-text" style="color: var(--text-main); font-weight: 600;">Hardware: Blynk Live</span>
+            <button type="button" id="header-btn-toggle-source" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; color: #fff; padding: 2px 8px; font-size: 11px; cursor: pointer; transition: all 0.2s;" title="Click to toggle between Live ESP8266 and Simulator">Switch</button>
+          </div>
+
+          <button class="header-icon-btn" id="btn-notifications" title="Alert Notifications">
+            <i data-lucide="bell"></i>
+          </button>
+
+          <div class="header-profile" id="header-profile-btn">
+            <div class="profile-avatar" id="header-profile-avatar">S</div>
+            <span class="profile-name" id="header-profile-name">Apex Pharma</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT CONTAINER -->
+      <main class="content-container">
+
+        <!-- ==================================================================
+             1. DASHBOARD HOME TAB (#page-dashboard)
+             ================================================================== -->
+        <div class="tab-page active" id="page-dashboard">
+
+          <!-- TOP KPI CARDS GRID (FLEET OVERVIEW: 4 CARDS ONLY) -->
+          <div class="kpi-cards-grid">
+
+            <!-- CARD 1: BOXES IN TRANSIT -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">BOXES IN TRANSIT</span>
+                <div class="kpi-icon"><i data-lucide="package"></i></div>
+              </div>
+              <div class="kpi-value" style="color: var(--color-primary);" id="kpi-boxes-count">8 Boxes</div>
+              <div class="kpi-sub safe" id="kpi-boxes-sub">● All Units Active in Transit</div>
+            </div>
+
+            <!-- CARD 2: AVERAGE TEMPERATURE -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">AVERAGE TEMPERATURE</span>
+                <div class="kpi-icon"><i data-lucide="thermometer"></i></div>
+              </div>
+              <div class="kpi-value" id="kpi-temp-val">4.5°C</div>
+              <div class="kpi-sub safe" id="kpi-temp-status">Fleet Safe (2°C – 8°C)</div>
+            </div>
+
+            <!-- CARD 3: AVERAGE HUMIDITY -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">AVERAGE HUMIDITY</span>
+                <div class="kpi-icon"><i data-lucide="droplets"></i></div>
+              </div>
+              <div class="kpi-value" id="kpi-humidity-val">62%</div>
+              <div class="kpi-sub safe" id="kpi-humidity-status">Normal Range (40–70%)</div>
+            </div>
+
+            <!-- CARD 4: GPS STATUS -->
+            <div class="kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">GPS STATUS</span>
+                <div class="kpi-icon"><i data-lucide="navigation"></i></div>
+              </div>
+              <div class="kpi-value" style="color: var(--color-safe);" id="kpi-gps-val">Connected</div>
+              <div class="kpi-sub safe" id="kpi-gps-signal">Strong Signal (4G / Satellite Fix)</div>
+            </div>
+
+          </div>
+
+          <!-- DASHBOARD MAIN GRID (MAP & BATTERY) -->
+          <div class="dashboard-main-grid">
+
+            <!-- LIVE TRACKING MAP CARD -->
+            <div class="card-box">
+              <div class="section-header">
+                <h2>Live GPS Tracking Map</h2>
+                <p>Real-time satellite & route tracking for active cold-chain boxes</p>
+              </div>
+
+              <div class="map-card-wrapper" style="margin-top: 14px;">
+                <div id="live-map"></div>
+
+                <!-- Map Overlay Data Bar -->
+                <div class="map-meta-overlay">
+                  <div class="meta-item">
+                    <span class="meta-label">Current Location</span>
+                    <span class="meta-val" id="map-overlay-loc">Erode Checkpoint</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Distance Travelled</span>
+                    <span class="meta-val" id="map-overlay-dist-done">82 km</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Remaining Distance</span>
+                    <span class="meta-val" id="map-overlay-dist-rem">135 km</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">ETA</span>
+                    <span class="meta-val" style="color: var(--color-primary);" id="map-overlay-eta">2h 35m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SMART TAG BATTERY & POWER LEVEL -->
+            <div class="card-box">
+              <div class="section-header">
+                <h2>Smart Tag Power Level</h2>
+                <p>ESP32 Internal Lithium Battery</p>
+              </div>
+
+              <div class="gauge-wrapper" style="margin-top: 10px;">
+                <svg class="gauge-svg" viewBox="0 0 120 120">
+                  <circle class="gauge-bg" cx="60" cy="60" r="54"></circle>
+                  <circle class="gauge-progress" id="battery-gauge-circle" cx="60" cy="60" r="54"></circle>
+                </svg>
+                <div class="gauge-center-text">
+                  <span class="gauge-percent" id="battery-gauge-percent">87%</span>
+                  <span class="gauge-tag">Battery</span>
+                </div>
+              </div>
+
+              <div class="detail-list" style="margin-top: 10px;">
+                <div class="detail-row">
+                  <span class="detail-key">Battery Health:</span>
+                  <span class="detail-val" style="color: var(--color-safe);" id="bat-health">Good</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-key">Voltage Output:</span>
+                  <span class="detail-val" id="bat-voltage">3.98 V</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-key">Sampling Rate:</span>
+                  <span class="detail-val" id="bat-sampling-rate">Every 5 seconds</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-key">Last Telemetry Ping:</span>
+                  <span class="detail-val" id="bat-updated">Just now</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- HISTORICAL TELEMETRY LOGS & REALTIME DATA STREAM TABLE -->
+          <div class="card-box" style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="database" style="color: var(--color-primary);"></i>
+                  Live Telemetry Stream & Historical Sensor Records
+                </h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                  Real-time chronologically stored telemetry logs from ESP8266 Hardware (Blynk Cloud) & Sensors.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="badge" id="telemetry-log-count-badge" style="background: rgba(0, 240, 255, 0.1); color: var(--color-primary); border: 1px solid rgba(0, 240, 255, 0.3); padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: 700;">
+                  0 Records
+                </span>
+                <span id="db-connection-status-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="status-dot" style="background: #10b981; width: 8px; height: 8px; border-radius: 50%;"></span>
+                  <span id="db-status-text">MySQL: Checking...</span>
+                </span>
+                <button type="button" class="btn-secondary" id="btn-refresh-history" style="padding: 6px 12px; font-size: 12px;" title="Refresh records from MySQL">
+                  <i data-lucide="refresh-cw"></i> Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- Date Filter Controls for MySQL Sensor Records -->
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding: 10px 14px; background: rgba(7, 10, 30, 0.6); border: 1px solid var(--border-color); border-radius: 8px;">
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                <i data-lucide="filter" style="width: 14px; height: 14px; color: var(--color-primary);"></i> Date Filter:
+              </span>
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <label style="font-size: 11px; color: var(--text-muted);" for="history-filter-start">From:</label>
+                <input type="date" id="history-filter-start" style="padding: 4px 8px; background: rgba(5,7,20,0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 12px;">
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <label style="font-size: 11px; color: var(--text-muted);" for="history-filter-end">To:</label>
+                <input type="date" id="history-filter-end" style="padding: 4px 8px; background: rgba(5,7,20,0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 12px;">
+              </div>
+              <button type="button" class="btn-primary" id="btn-apply-date-filter" style="padding: 5px 12px; font-size: 12px; width: auto;">
+                <i data-lucide="search" style="width: 12px; height: 12px;"></i> Filter
+              </button>
+              <button type="button" class="btn-secondary" id="btn-reset-date-filter" style="padding: 5px 12px; font-size: 12px; width: auto;">
+                <i data-lucide="x" style="width: 12px; height: 12px;"></i> Clear
+              </button>
+            </div>
+
+            <!-- Scrollable Table of All Historical Telemetry Records -->
+            <div style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(5, 7, 20, 0.6);">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;" id="telemetry-history-table">
+                <thead style="background: #070a1e; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--border-color);">
+                  <tr style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <th style="padding: 10px 14px;">#</th>
+                    <th style="padding: 10px 14px;">Timestamp</th>
+                    <th style="padding: 10px 14px;">Temp</th>
+                    <th style="padding: 10px 14px;">Humidity</th>
+                    <th style="padding: 10px 14px;">Shock Status</th>
+                    <th style="padding: 10px 14px;">Angle Status</th>
+                    <th style="padding: 10px 14px;">Tamper (D5)</th>
+                    <th style="padding: 10px 14px;">Water (D6)</th>
+                    <th style="padding: 10px 14px;">Source</th>
+                    <th style="padding: 10px 14px;">Integrity</th>
+                  </tr>
+                </thead>
+                <tbody id="telemetry-history-tbody">
+                  <!-- Dynamically populated rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ==================================================================
+             2. LIVE TRACKING TAB (#page-tracking)
+             ================================================================== -->
+        <div class="tab-page" id="page-tracking">
+          <div class="section-header" style="margin-bottom: 14px;">
+            <p style="font-size: 13px; color: var(--text-muted);">Vehicle <strong id="track-trans-no" style="color: var(--color-primary);">TN09 AB 1234</strong> &bull; Smart Box <strong id="track-box-id" style="color: var(--color-safe);">BOX-001</strong></p>
+          </div>
+
+          <!-- FULL MAP CARD -->
+          <div class="card-box">
+            <div class="map-card-wrapper" style="height: 480px;">
+              <div id="tracking-full-map"></div>
+            </div>
+          </div>
+
+          <!-- SHIPMENT TIMELINE STEPPER (REQUESTED: "live tracking la shipment timeline") -->
+          <div class="card-box">
+            <div class="section-header">
+              <h2>Shipment Timeline & Progress Milestones</h2>
+              <p>Current Stage: <strong style="color: var(--color-primary);" id="timeline-stage-text">IN
+                  TRANSIT</strong></p>
+            </div>
+
+            <div class="timeline-container">
+              <div class="timeline-track-bg"></div>
+              <div class="timeline-track-fill" id="timeline-progress-fill" style="width: 60%;"></div>
+
+              <div class="timeline-step completed">
+                <div class="step-node">✓</div>
+                <span class="step-label">Created</span>
+              </div>
+              <div class="timeline-step completed">
+                <div class="step-node">✓</div>
+                <span class="step-label">Packed & Sealed</span>
+              </div>
+              <div class="timeline-step completed">
+                <div class="step-node">✓</div>
+                <span class="step-label">Dispatched</span>
+              </div>
+              <div class="timeline-step current" id="step-in-transit">
+                <div class="step-node">🚚</div>
+                <span class="step-label">In Transit</span>
+              </div>
+              <div class="timeline-step" id="step-near-dest">
+                <div class="step-node">📍</div>
+                <span class="step-label">Near Destination</span>
+              </div>
+              <div class="timeline-step" id="step-delivered">
+                <div class="step-node">🏁</div>
+                <span class="step-label">Delivered</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- ==================================================================
+             3. MY SHIPMENT TAB (#page-shipment)
+             ================================================================== -->
+        <div class="tab-page" id="page-shipment">
+          <div class="section-header">
+            <h2>Active Shipment Management & Registry</h2>
+            <p>Switch between created medical shipments or create new ones</p>
+          </div>
+
+          <!-- MULTI-SHIPMENT SELECTOR BAR -->
+          <div class="card-box" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 700; color: var(--color-primary);">📦 Shipment Registry (<span
+                    id="shipment-count-badge">1 Active</span>)</h3>
+                <p style="font-size: 12px; color: var(--text-muted);">Select any shipment to switch live telemetry view
+                </p>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-secondary" id="btn-goto-create-shipment">
+                  <i data-lucide="plus"></i> + Create Next Shipment
+                </button>
+                <button class="btn-secondary" id="btn-delete-active-shipment" style="border-color: rgba(255, 42, 109, 0.4); color: var(--color-danger); background: rgba(255, 42, 109, 0.12); font-weight: 700;">
+                  <i data-lucide="trash-2"></i> Delete Shipment
+                </button>
+              </div>
+            </div>
+
+            <div class="shipment-selector-chips" id="shipment-selector-chips">
+              <!-- Rendered dynamically by JS -->
+            </div>
+          </div>
+
+          <div class="card-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <div>
+                <span class="box-spec-badge" style="background: rgba(0,240,255,0.15); color: var(--color-primary);"
+                  id="disp-shipment-id">SHIPMENT-001</span>
+                <h3 style="font-size: 22px; font-weight: 800; margin-top: 6px; color: var(--text-main);"
+                  id="disp-medicine-name">Paracetamol Injection (500 Vials)</h3>
+                <p style="font-size: 13px; color: var(--text-muted);">Batch: <strong
+                    id="disp-batch-no">PCM-2405A</strong> | Smart Box: <strong id="disp-box-id">BOX-001</strong> | Smart
+                    Tag: <strong id="disp-tag-id">TAG-001</strong></p>
+              </div>
+              <div style="text-align: right;">
+                <span class="kpi-sub safe"
+                  style="font-size: 14px; background: var(--color-safe-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--color-safe-border);"
+                  id="disp-status-badge">IN TRANSIT</span>
+              </div>
+            </div>
+
+            <div class="details-triple-grid" style="margin-bottom: 20px;">
+              <div class="detail-card">
+                <div class="detail-card-title"><i data-lucide="shield"></i> Cold-Chain Thermal Integrity</div>
+                <div class="detail-list">
+                  <div class="detail-row"><span class="detail-key">Integrity Score:</span><span class="detail-val"
+                      style="color: var(--color-safe);" id="disp-integrity">94% (Excellent)</span></div>
+                  <div class="detail-row"><span class="detail-key">Current Temp:</span><span class="detail-val"
+                      id="disp-curr-temp">4.5°C</span></div>
+                  <div class="detail-row"><span class="detail-key">Required Safe Limit:</span><span class="detail-val"
+                      style="color: var(--color-primary);" id="disp-req-temp">2°C – 8°C</span></div>
+                  <div class="detail-row"><span class="detail-key">Category:</span><span class="detail-val"
+                      id="disp-category">Pharmaceutical / Injectables</span></div>
+                </div>
+              </div>
+
+              <div class="detail-card">
+                <div class="detail-card-title"><i data-lucide="truck"></i> Logistics & Driver Info</div>
+                <div class="detail-list">
+                  <div class="detail-row"><span class="detail-key">Transport No:</span><span class="detail-val"
+                      id="disp-trans-no">TN09 AB 1234</span></div>
+                  <div class="detail-row"><span class="detail-key">Driver Name:</span><span class="detail-val"
+                      id="disp-driver-name">Ramesh K</span></div>
+                  <div class="detail-row"><span class="detail-key">Driver Contact:</span><span class="detail-val"
+                      id="disp-driver-contact">+91 98765 43210</span></div>
+                  <div class="detail-row"><span class="detail-key">ETA:</span><span class="detail-val"
+                      style="color: var(--color-primary);" id="disp-eta">2h 35m</span></div>
+                </div>
+              </div>
+
+              <div class="detail-card">
+                <div class="detail-card-title"><i data-lucide="building"></i> Destination & Receiver</div>
+                <div class="detail-list">
+                  <div class="detail-row"><span class="detail-key">Receiver Name:</span><span class="detail-val"
+                      id="disp-receiver-name">Apollo Pharmacy</span></div>
+                  <div class="detail-row"><span class="detail-key">Contact Phone:</span><span class="detail-val"
+                      id="disp-receiver-phone">+91 91234 56789</span></div>
+                  <div class="detail-row"><span class="detail-key">Destination City:</span><span class="detail-val"
+                      id="disp-dest-city">Chennai, Tamil Nadu</span></div>
+                  <div class="detail-row"><span class="detail-key">Expected Date:</span><span class="detail-val"
+                      id="disp-exp-date">28 Aug 2026</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <button class="btn-primary" style="width: auto;" id="btn-shipment-livetrack">
+                <i data-lucide="truck"></i> Open Live Map Tracking
+              </button>
+              <button class="btn-secondary" style="border-color: rgba(255, 42, 109, 0.4); color: var(--color-danger); background: rgba(255, 42, 109, 0.12); font-weight: 700;" id="btn-delete-active-shipment-2">
+                <i data-lucide="trash-2"></i> Delete Active Shipment
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             4. CREATE SHIPMENT TAB (#page-create-shipment)
+             ================================================================== -->
+        <div class="tab-page" id="page-create-shipment">
+          <div class="section-header">
+            <h2>Create New Medical Shipment</h2>
+            <p>Pair Medicine, Transport Vehicle, Receiver, and Smart Tag Hardware</p>
+          </div>
+
+          <form id="form-create-shipment">
+
+            <!-- SECTION 1: MEDICINE DETAILS -->
+            <div class="card-box" style="margin-bottom: 20px;">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--color-primary);">SECTION
+                1: MEDICINE DETAILS</h3>
+              <div class="sensor-metrics-grid"
+                style="grid-template-columns: repeat(2, 1fr); background: transparent; padding: 0; gap: 16px;">
+                <div class="form-group">
+                  <label>Medicine Name</label>
+                  <input type="text" id="create-med-name" required
+                    placeholder="e.g. Paracetamol Injection / Insulin">
+                </div>
+                <div class="form-group">
+                  <label>Medicine Category</label>
+                  <select id="create-med-cat" required>
+                    <option value="" disabled selected>-- Select Category --</option>
+                    <option value="Vaccines & Biologics">Vaccines & Biologics (2°C - 8°C)</option>
+                    <option value="Insulin Products">Insulin Products (2°C - 8°C)</option>
+                    <option value="Cell & Gene Therapy">Cell & Gene Therapy (-80°C - -20°C)</option>
+                    <option value="Blood & Plasma">Blood & Plasma (2°C - 6°C)</option>
+                    <option value="General Pharmaceutical">General Pharmaceutical (15°C - 25°C)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Batch Number</label>
+                  <input type="text" id="create-batch-no" required placeholder="e.g. BATCH-992A / PCM-2405A">
+                </div>
+                <div class="form-group">
+                  <label>Quantity</label>
+                  <input type="text" id="create-qty" required placeholder="e.g. 500 Vials / 1000 Ampoules">
+                </div>
+                <div class="form-group">
+                  <label>Manufacturing Date</label>
+                  <input type="date" id="create-mfd" required>
+                </div>
+                <div class="form-group">
+                  <label>Expiry Date</label>
+                  <input type="date" id="create-exp" required>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                  <label>Required Temperature Range (°C)</label>
+                  <input type="text" id="create-temp-range" required placeholder="e.g. 2°C - 8°C">
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 2: TRANSPORT DETAILS -->
+            <div class="card-box" style="margin-bottom: 20px;">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--color-primary);">SECTION
+                2: TRANSPORT & DRIVER DETAILS</h3>
+              <div class="sensor-metrics-grid"
+                style="grid-template-columns: repeat(2, 1fr); background: transparent; padding: 0; gap: 16px;">
+                <div class="form-group">
+                  <label>Transport Vehicle Reg Number</label>
+                  <input type="text" id="create-trans-no" required placeholder="e.g. TN09 AB 1234">
+                </div>
+                <div class="form-group">
+                  <label>Vehicle Type</label>
+                  <input type="text" id="create-veh-type" required placeholder="e.g. Refrigerated Van / Cold Truck">
+                </div>
+                <div class="form-group">
+                  <label>Driver Name</label>
+                  <input type="text" id="create-driver-name" required placeholder="Driver full name">
+                </div>
+                <div class="form-group">
+                  <label>Driver Phone Contact</label>
+                  <input type="text" id="create-driver-phone" required
+                    placeholder="e.g. +91 98765 43210">
+                </div>
+                <div class="form-group">
+                  <label>Pickup Origin Location</label>
+                  <input type="text" id="create-origin" required placeholder="e.g. Coimbatore Cold Storage Hub">
+                </div>
+                <div class="form-group">
+                  <label>Destination City</label>
+                  <input type="text" id="create-dest" required placeholder="e.g. Chennai Central Hospital">
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 3: RECEIVER DETAILS -->
+            <div class="card-box" style="margin-bottom: 20px;">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--color-primary);">SECTION
+                3: RECEIVER DETAILS</h3>
+              <div class="sensor-metrics-grid"
+                style="grid-template-columns: repeat(2, 1fr); background: transparent; padding: 0; gap: 16px;">
+                <div class="form-group">
+                  <label>Receiver Organization Name</label>
+                  <input type="text" id="create-receiver-name" required
+                    placeholder="e.g. Apollo Pharmacy / Govt Hospital">
+                </div>
+                <div class="form-group">
+                  <label>Receiver Phone Contact</label>
+                  <input type="text" id="create-receiver-phone" required placeholder="e.g. +91 91234 56789">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                  <label>Receiver Address</label>
+                  <input type="text" id="create-receiver-addr" required
+                    placeholder="e.g. Apollo Central Store, Greams Road, Chennai - 600006">
+                </div>
+              </div>
+            </div>
+
+
+
+            <button type="submit" class="btn-primary" style="max-width: 320px;">
+              <i data-lucide="check-circle"></i> CREATE & ASSOCIATE SHIPMENT
+            </button>
+          </form>
+        </div>
+
+        <!-- ==================================================================
+             5. SMART BOX TAB (#page-smart-box)
+             ================================================================== -->
+        <div class="tab-page" id="page-smart-box">
+          <div class="section-header">
+            <h2>SMART BOX - Live Sensor & Box Details</h2>
+            <p>Smart Box: <strong id="sb-page-box-id">BOX-001</strong> | Smart Tag: <strong>TAG-001</strong> (Live
+              7-Sensor Tracking System)</p>
+          </div>
+
+          <div class="sensor-matrix-grid" style="margin-bottom: 24px;">
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="thermometer"></i> 1. Temperature Sensor</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Current Temp</span><span class="s-metric-val"
+                    id="sb-det-temp">4.5°C</span></div>
+                <div class="s-metric"><span class="s-metric-label">Target Safe Range</span><span
+                    class="s-metric-val">2.0°C – 8.0°C</span></div>
+                <div class="s-metric"><span class="s-metric-label">Accuracy</span><span class="s-metric-val">High
+                    Accuracy (±0.1°C)</span></div>
+                <div class="s-metric"><span class="s-metric-label">Status</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">SAFE</span></div>
+              </div>
+            </div>
+
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="droplets"></i> 2. Humidity Sensor</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Current Level</span><span class="s-metric-val"
+                    id="sb-det-hum">62%</span></div>
+                <div class="s-metric"><span class="s-metric-label">Air Moisture</span><span class="s-metric-val">Normal
+                    Dry Air</span></div>
+                <div class="s-metric"><span class="s-metric-label">Safe Level</span><span class="s-metric-val">40% – 70%
+                    RH</span></div>
+                <div class="s-metric"><span class="s-metric-label">Status</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">NORMAL</span></div>
+              </div>
+            </div>
+
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="zap"></i> 3. Box Shock & Bump Sensor</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Bump Level</span><span class="s-metric-val"
+                    id="sb-det-shock">0.1 G</span></div>
+                <div class="s-metric"><span class="s-metric-label">Drive Condition</span><span
+                    class="s-metric-val">Smooth Road Drive</span></div>
+                <div class="s-metric"><span class="s-metric-label">Max Allowed Limit</span><span
+                    class="s-metric-val">3.0 G</span></div>
+                <div class="s-metric"><span class="s-metric-label">Status</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">SAFE & SMOOTH</span></div>
+              </div>
+            </div>
+
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="lock"></i> 4. Box Lock & Security Seal</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Box Door</span><span class="s-metric-val"
+                    id="sb-det-tamper">Closed & Locked</span></div>
+                <div class="s-metric"><span class="s-metric-label">Security Seal</span><span class="s-metric-val">Intact
+                    & Safe</span></div>
+                <div class="s-metric"><span class="s-metric-label">Door Open Count</span><span class="s-metric-val">0
+                    Times Opened</span></div>
+                <div class="s-metric"><span class="s-metric-label">Status</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">LOCKED & SECURE</span></div>
+              </div>
+            </div>
+
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="battery-charging"></i> 5. Battery Power & Health</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Power Level</span><span class="s-metric-val"
+                    id="sb-det-battery">87%</span></div>
+                <div class="s-metric"><span class="s-metric-label">Voltage</span><span class="s-metric-val">3.98
+                    Volts</span></div>
+                <div class="s-metric"><span class="s-metric-label">Estimated Backup</span><span class="s-metric-val">5+
+                    Days Active</span></div>
+                <div class="s-metric"><span class="s-metric-label">Battery Health</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">EXCELLENT</span></div>
+              </div>
+            </div>
+
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="navigation"></i> 6. Live GPS Location Tracker</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Satellites Found</span><span class="s-metric-val"
+                    id="sb-det-gps">12 Satellites</span></div>
+                <div class="s-metric"><span class="s-metric-label">Coordinates</span><span class="s-metric-val"
+                    id="sb-det-coords">11.3410° N, 77.7172° E</span></div>
+                <div class="s-metric"><span class="s-metric-label">Accuracy</span><span class="s-metric-val">Exact
+                    (±1.8m)</span></div>
+                <div class="s-metric"><span class="s-metric-label">Status</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">CONNECTED</span></div>
+              </div>
+            </div>
+
+            <div class="sensor-matrix-card">
+              <div class="sensor-card-title"><i data-lucide="wifi"></i> 7. 4G Mobile Network Signal</div>
+              <div class="sensor-metrics-grid">
+                <div class="s-metric"><span class="s-metric-label">Internet Mode</span><span class="s-metric-val">4G
+                    High-Speed</span></div>
+                <div class="s-metric"><span class="s-metric-label">Signal Strength</span><span
+                    class="s-metric-val">Strong Signal (-72dBm)</span></div>
+                <div class="s-metric"><span class="s-metric-label">Security</span><span class="s-metric-val">Fully
+                    Encrypted</span></div>
+                <div class="s-metric"><span class="s-metric-label">Status</span><span class="s-metric-val"
+                    style="color: var(--color-safe);">ONLINE</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             6. ALERTS TAB (#page-alerts) (REQUESTED: "like that alerts sollanu")
+             ================================================================== -->
+        <div class="tab-page" id="page-alerts">
+          <div class="section-header">
+            <h2>Cold-Chain Alert & Incident Log Center</h2>
+            <p>Real-time Excursion & Security Notifications for Smart Box <strong>BOX-001</strong></p>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn-secondary active" id="btn-filter-alerts-all"><i data-lucide="bell" style="width: 15px; height: 15px;"></i> All Alerts</button>
+          </div>
+
+          <div class="alerts-list-wrapper" id="alerts-container">
+            <!-- Dynamic Alert Items Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             7. ALL-IN-ONE ANALYTICS TAB (#page-analytics-all) (REQUESTED: "analystics all in one page")
+             ================================================================== -->
+        <div class="tab-page" id="page-analytics-all">
+          <div class="section-header">
+            <h2>All-in-One Comprehensive Cold-Chain Analytics</h2>
+            <p>Unified Real-Time Telemetry & Thermal Integrity Diagnostics for Smart Box <strong>BOX-001</strong></p>
+          </div>
+
+          <!-- TOP ROW: TEMPERATURE STABILITY CHART & HUMIDITY CHART -->
+          <div class="dashboard-main-grid" style="grid-template-columns: 1fr 1fr;">
+
+            <div class="card-box">
+              <div class="section-header">
+                <h2>1. Temperature Thermal Curve (°C)</h2>
+                <p>Safe Range: <strong id="all-chart-safe-temp">2.0°C - 8.0°C</strong> | Live History</p>
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="tempAnalyticsChart"></canvas>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px;">
+                <span>Current: <strong id="chart-curr-temp">4.5°C</strong></span>
+                <span>Min: <strong style="color: var(--color-primary);" id="chart-min-temp">3.2°C</strong></span>
+                <span>Max: <strong style="color: var(--color-warning);" id="chart-max-temp">6.7°C</strong></span>
+              </div>
+            </div>
+
+            <div class="card-box">
+              <div class="section-header">
+                <h2>2. Humidity Trend (%)</h2>
+                <p>Normal Threshold: <strong>40% - 70% RH</strong></p>
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="humidityAnalyticsChart"></canvas>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px;">
+                <span>Current: <strong style="color: var(--color-primary);" id="chart-curr-hum">62%</strong></span>
+                <span>Average: <strong>61%</strong></span>
+                <span>Status: <strong style="color: var(--color-safe);">NORMAL</strong></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- BOTTOM ROW: BATTERY DECAY & INTEGRITY GAUGE -->
+          <div class="dashboard-main-grid" style="grid-template-columns: 1fr 1fr;">
+
+            <div class="card-box">
+              <div class="section-header">
+                <h2>3. Smart Tag Battery Discharge Rate</h2>
+                <p>3.7V Lithium Ion Cell Voltage Profile</p>
+              </div>
+              <div style="height: 260px; position: relative;">
+                <canvas id="batteryAnalyticsChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card-box"
+              style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+              <div class="section-header" style="margin-bottom: 12px;">
+                <h2>4. Overall Cold-Chain Integrity</h2>
+                <p>GDP Compliance Score</p>
+              </div>
+
+              <div class="gauge-wrapper" style="width: 160px; height: 160px;">
+                <svg class="gauge-svg" viewBox="0 0 120 120">
+                  <circle class="gauge-bg" cx="60" cy="60" r="54"></circle>
+                  <circle class="gauge-progress" id="integrity-gauge-circle" cx="60" cy="60" r="54"
+                    style="stroke: var(--color-safe); stroke-dashoffset: 20;"></circle>
+                </svg>
+                <div class="gauge-center-text">
+                  <span class="gauge-percent" style="font-size: 30px; color: var(--color-safe);"
+                    id="integrity-gauge-val">94%</span>
+                  <span class="gauge-tag">EXCELLENT</span>
+                </div>
+              </div>
+
+              <div style="width: 100%; margin-top: 16px;">
+                <div class="detail-row"><span class="detail-key">Temperature Status</span><span class="detail-val"
+                    style="color: var(--color-safe);">✓ Passed</span></div>
+                <div class="detail-row"><span class="detail-key">Humidity Compliance</span><span class="detail-val"
+                    style="color: var(--color-safe);">✓ Passed</span></div>
+                <div class="detail-row"><span class="detail-key">Tamper / Security Seal</span><span class="detail-val"
+                    style="color: var(--color-safe);">✓ Intact</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             7B. TEMPERATURE ANALYTICS TAB (#page-temperature-analytics)
+             ================================================================== -->
+        <div class="tab-page" id="page-temperature-analytics">
+          <div class="section-header">
+            <h2>Detailed Temperature & Thermal Analysis</h2>
+            <p>Historical temperature telemetry log for GDP regulatory compliance review</p>
+          </div>
+
+          <div class="card-box" style="margin-bottom: 20px;">
+            <div class="section-header" style="margin-bottom: 12px;">
+              <h2>Thermal Excursion & Stability Profile (°C)</h2>
+              <p>Safe Thermal Range: <strong id="full-chart-safe-temp">2.0°C - 8.0°C</strong></p>
+            </div>
+            <div style="height: 380px; position: relative;">
+              <canvas id="analytics-temp-full-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             7C. SENSOR ANALYSIS TAB (#page-sensor-analysis)
+             ================================================================== -->
+        <div class="tab-page" id="page-sensor-analysis">
+          <div class="section-header">
+            <h2>Multi-Sensor Health Analysis</h2>
+            <p>Humidity and Smart Tag Battery Telemetry Stream over Transit Duration</p>
+          </div>
+
+          <div class="dashboard-main-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+            <div class="card-box">
+              <div class="section-header">
+                <h2>1. Relative Humidity Stream (%)</h2>
+                <p>Normal Threshold: <strong>40% - 70% RH</strong></p>
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="analytics-humidity-chart"></canvas>
+              </div>
+            </div>
+
+            <div class="card-box">
+              <div class="section-header">
+                <h2>2. Smart Tag Battery Discharge (%)</h2>
+                <p>3.7V Lithium Ion Cell Profile</p>
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="analytics-battery-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             8. REPORTS TAB (#page-reports) (REQUESTED: "reports full ahh print pannnu")
+             ================================================================== -->
+        <div class="tab-page" id="page-reports">
+          <div class="section-header">
+            <h2>Pharmaceutical Cold-Chain GDP Compliance Certificate Report</h2>
+            <p>Official 18-Section Regulatory Compliance Document</p>
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <button class="btn-primary" id="btn-print-report" style="width: auto;"><i data-lucide="file-down"></i> AUTO SAVE & DOWNLOAD PDF</button>
+            <button class="btn-secondary" id="btn-export-pdf" style="width: auto; background: rgba(0, 240, 255, 0.12); border-color: var(--color-primary); color: var(--color-primary); font-weight: 700;"><i data-lucide="printer"></i> PRINT DIALOG</button>
+            <button class="btn-secondary" id="btn-download-csv"><i data-lucide="download"></i> Export Telemetry CSV</button>
+          </div>
+
+          <!-- PRINTABLE GDP COMPLIANCE DOCUMENT -->
+          <div class="report-document-paper" id="report-paper">
+            <div class="report-header-banner">
+              <div class="report-title-group">
+                <h2>❄️ SENDER LOGISTICS</h2>
+                <p>Pharmaceutical Cold-Chain Integrity GDP Certificate</p>
+              </div>
+              <div class="report-meta-box">
+                <p><strong>Certificate ID:</strong> RPT-2026-9901</p>
+                <p><strong>Generated Date:</strong> 28 Aug 2026</p>
+                <p><strong>Compliance Standard:</strong> WHO / EU GDP Standard</p>
+              </div>
+            </div>
+
+            <div class="report-sections-grid">
+              <div class="report-sec">
+                <div class="report-sec-title">1. Active Shipment Information</div>
+                <p>Shipment ID: <strong id="rpt-shipment-id">SHIPMENT-001</strong></p>
+                <p>Status: <strong style="color: #0284c7;" id="rpt-status">IN TRANSIT</strong></p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">2. Medicine & Batch Details</div>
+                <p>Medicine Name: <strong id="rpt-med-name">Paracetamol Injection</strong></p>
+                <p>Batch Number: <strong id="rpt-batch-no">PCM-2405A</strong> (500 Vials)</p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">3. Thermal Specification</div>
+                <p>Required Temperature: <strong id="rpt-req-temp">2°C – 8°C</strong></p>
+                <p>Current Thermal Reading: <strong id="rpt-curr-temp">4.5°C</strong> (Min: 3.2°C, Max: 6.7°C)</p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">4. Transport Logistics</div>
+                <p>Vehicle: <strong id="rpt-vehicle-no">Refrigerated Van (TN09 AB 1234)</strong></p>
+                <p>Driver: <strong id="rpt-driver-name">Ramesh K (+91 98765 43210)</strong></p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">5. Receiver Facility</div>
+                <p>Receiver Name: <strong id="rpt-receiver-name">Apollo Pharmacy</strong></p>
+                <p>Destination: <strong id="rpt-dest">Chennai, Tamil Nadu</strong></p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">6. Smart Tag Telemetry Specs</div>
+                <p>Box ID: <strong id="rpt-box-id">BOX-001</strong></p>
+                <p>Smart Tag: <strong id="rpt-tag-id">TAG-001 (ESP32 Telemetry)</strong></p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">7. Humidity & Environmental</div>
+                <p>Average Humidity: <strong>62% RH</strong> (Safe 40-70%)</p>
+                <p>Vibration Impact: <strong>0.1 G</strong> (Pass)</p>
+              </div>
+              <div class="report-sec">
+                <div class="report-sec-title">8. Overall Integrity Signoff</div>
+                <p>Cold-Chain Integrity Score: <strong style="color: #10b981;" id="rpt-integrity">94%
+                    (EXCELLENT)</strong></p>
+                <p>Final GDP Certification: <strong style="color: #10b981;">APPROVED & COMPLIANT</strong></p>
+              </div>
+            </div>
+
+            <div
+              style="margin-top: 30px; border-top: 2px dashed #cbd5e1; padding-top: 20px; display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
+              <div>
+                <p><strong>Verified by Quality Assurance Officer</strong></p>
+                <p style="margin-top: 24px; text-decoration: underline;">Dr. S. Vignesh, Ph.D. (Lead Cold-Chain Auditor)
+                </p>
+              </div>
+              <div style="text-align: right;">
+                <p><strong>Digital Cryptographic Signature</strong></p>
+                <p style="margin-top: 24px; font-family: monospace;">SHA256: 9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             9. PROFILE TAB (#page-profile) (REQUESTED: "profie ah save pannu")
+             ================================================================== -->
+        <div class="tab-page" id="page-profile">
+          <div class="section-header">
+            <h2>Sender Organization Profile</h2>
+            <p>Manage your Pharmaceutical Company Account & Logistics Credentials</p>
+          </div>
+
+          <div class="card-box" style="max-width: 650px;">
+            <form id="form-save-profile">
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label>Company / Organization Name</label>
+                <input type="text" id="prof-company" value="Apex Pharma Logistics Ltd." required>
+              </div>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label>Sender Full Name</label>
+                <input type="text" id="prof-name" value="Apex Pharma" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label>Email Address</label>
+                <input type="email" id="prof-email" value="sender@apexpharma.com" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label>Contact Phone Number</label>
+                <input type="text" id="prof-phone" value="+91 98765 00000" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label>Pharmaceutical License / GDP ID</label>
+                <input type="text" id="prof-license" value="GDP-TN-2026-88492" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label>Sender Hub Warehouse Location</label>
+                <input type="text" id="prof-location" value="Coimbatore Cold Storage Hub, Tamil Nadu" required>
+              </div>
+              <button type="submit" class="btn-primary">
+                <i data-lucide="save"></i> SAVE & UPDATE PROFILE
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             10. SETTINGS TAB (#page-settings) (REQUESTED: "sender threshold frequency fix pannu atha medicine nu detail ahh katanu")
+             ================================================================== -->
+        <div class="tab-page" id="page-settings">
+          <div class="section-header">
+            <h2>Cold-Chain Thresholds & Telemetry Sampling Configuration</h2>
+            <p>Configure Temperature Safety Bounds & Telemetry Transmission Frequency Per Medicine Type</p>
+          </div>
+
+          <div class="card-box" style="max-width: 720px;">
+
+            <!-- MEDICINE SPECIFIC PRESET SELECTOR -->
+            <div class="form-group"
+              style="margin-bottom: 24px; background: #070a1e; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+              <label style="color: var(--color-primary); font-size: 14px; font-weight: 700;">🧪 Select Medicine Type
+                Preset</label>
+              <select id="setting-preset-select" style="margin-top: 6px;">
+                <option value="vaccine" selected>🧪 Vaccines & Biologics (Safe: 2.0°C - 8.0°C | Sampling: 5s)</option>
+                <option value="insulin">💉 Insulin Products (Safe: 2.0°C - 8.0°C | Sampling: 10s)</option>
+                <option value="cryo">❄️ Cell & Gene Therapy (Cryo: -80.0°C - -20.0°C | Sampling: 5s)</option>
+                <option value="blood">🩸 Blood & Plasma (Safe: 2.0°C - 6.0°C | Sampling: 15s)</option>
+                <option value="ambient">💊 General Pharmaceuticals (Ambient: 15.0°C - 25.0°C | Sampling: 30s)</option>
+              </select>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Selecting a preset automatically
+                updates thermal boundaries and telemetry frequency.</p>
+            </div>
+
+            <form id="form-save-settings">
+              <div class="sensor-metrics-grid"
+                style="grid-template-columns: repeat(2, 1fr); background: transparent; padding: 0; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                  <label>Minimum Safe Temperature (°C)</label>
+                  <input type="number" id="setting-min-temp" value="2.0" step="0.1" required>
+                </div>
+                <div class="form-group">
+                  <label>Maximum Safe Temperature (°C)</label>
+                  <input type="number" id="setting-max-temp" value="8.0" step="0.1" required>
+                </div>
+                <div class="form-group">
+                  <label>Maximum Allowed Relative Humidity (%)</label>
+                  <input type="number" id="setting-max-hum" value="70" required>
+                </div>
+                <div class="form-group">
+                  <label>Max Shock / Impact G Limit (G Force)</label>
+                  <input type="number" id="setting-max-g" value="3.0" step="0.1" required>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                  <label>ESP32 Telemetry Transmission Frequency (Seconds)</label>
+                  <select id="setting-telemetry-freq">
+                    <option value="5" selected>Every 5 Seconds (High Precision Live Tracking)</option>
+                    <option value="10">Every 10 Seconds (Standard Balance)</option>
+                    <option value="15">Every 15 Seconds (Battery Saver)</option>
+                    <option value="30">Every 30 Seconds (Long Distance Transit)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary">
+                <i data-lucide="sliders"></i> SAVE & APPLY THRESHOLDS & FREQUENCY
+              </button>
+            </form>
+          </div>
+
+          <!-- HARDWARE IOT BLYNK CONFIGURATION CARD -->
+          <div class="card-box" style="margin-top: 24px; max-width: 720px; border: 1px solid rgba(0, 240, 255, 0.3); background: rgba(7, 10, 30, 0.7);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="cpu"></i> Live ESP8266 & Blynk Cloud Hardware Sync
+              </h3>
+              <span class="status-badge" id="blynk-hw-status-badge" style="font-size: 12px; padding: 4px 12px; border-radius: 12px; background: rgba(0, 240, 255, 0.1); color: var(--color-primary); border: 1px solid rgba(0, 240, 255, 0.3);">
+                Checking...
+              </span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+              Connects directly to your NodeMCU / ESP8266 via Blynk IoT Cloud REST API to display real-time sensor measurements.
+            </p>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label>Telemetry Source</label>
+              <div style="display: flex; gap: 16px; margin-top: 6px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                  <input type="radio" name="telemetry-source-radio" value="blynk" id="radio-source-blynk" checked>
+                  <span>⚡ Live Hardware (ESP8266 Blynk Cloud)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main);">
+                  <input type="radio" name="telemetry-source-radio" value="simulation" id="radio-source-sim">
+                  <span>🧪 Demo Simulation</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label>Blynk Device Auth Token</label>
+              <div style="display: flex; gap: 10px; margin-top: 6px;">
+                <input type="text" id="blynk-token-input" value="r62_bOTJPlY1gnaI79geaTMmAN8TXYvN" style="font-family: monospace;">
+                <button type="button" id="btn-save-blynk-token" class="btn-primary" style="width: auto; white-space: nowrap;">
+                  <i data-lucide="save"></i> Save & Test
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Hardware Pin Monitor Matrix -->
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; margin-top: 16px; border: 1px solid var(--border-color);">
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 10px;">LIVE VIRTUAL PIN VALUES (FROM BLYNK CLOUD):</div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13px;">
+                <div>V1 (Humidity): <strong id="blynk-val-v1" style="color: var(--color-primary);">--</strong></div>
+                <div>V2 (Temperature): <strong id="blynk-val-v2" style="color: var(--color-warning);">--</strong></div>
+                <div>V3 (Fall/Tilt): <strong id="blynk-val-v3">--</strong></div>
+                <div>V4 (Vibration): <strong id="blynk-val-v4">--</strong></div>
+                <div>V5 (Tamper Switch): <strong id="blynk-val-v5">--</strong></div>
+                <div>V6 (Water/Rain): <strong id="blynk-val-v6">--</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       SMART BOX SPECIFICATION MODAL
+       ========================================================================== -->
+  <div class="modal-overlay hidden" id="smartbox-modal">
+    <div class="modal-content-card">
+      <div class="modal-header">
+        <h3>❄️ Smart Box Details & Sensor Information</h3>
+        <button class="modal-close-btn" id="btn-close-smartbox-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="spec-tech-grid">
+          <div class="spec-tech-box">
+            <h4>🧠 1. Smart Box Brain (Main Controller)</h4>
+            <p>Monitors all 7 sensors every second, encrypts live data, and sends updates continuously to your
+              dashboard.</p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>🌡 2. Precision Temperature Sensor</h4>
+            <p>Continuously measures medicine temperature inside the box with high 0.1°C accuracy to prevent spoilage.
+            </p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>💧 3. Air Humidity & Moisture Sensor</h4>
+            <p>Ensures air inside the box stays dry and safe within 40%–70% relative humidity.</p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>⚡ 4. Road Bump & Shock Sensor</h4>
+            <p>Detects rough road bumps, vehicle potholes, or accidental box drops during transport.</p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>🔒 5. Door Lock & Security Seal</h4>
+            <p>Alerts immediately if anyone opens the box door or breaks the security seal during delivery.</p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>📍 6. Live GPS Location Tracker</h4>
+            <p>Tracks live GPS coordinates of the delivery truck on the interactive map with exact precision.</p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>📶 7. 4G Mobile Data Transmitter</h4>
+            <p>Uses 4G SIM card to transmit location and temperature updates anywhere on the road.</p>
+          </div>
+
+          <div class="spec-tech-box">
+            <h4>🔋 8. 5-Day Rechargeable Battery</h4>
+            <p>High-capacity battery keeps sensors running for 120+ hours on a single charge with waterproof protection.
+            </p>
+          </div>
+        </div>
+
+        <div
+          style="background: #070a1e; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <h4 style="font-size: 13px; color: var(--color-primary); margin-bottom: 6px;">📡 Direct Telemetry JSON Payload
+            Format</h4>
+          <pre
+            style="font-family: var(--font-mono); font-size: 11px; color: var(--color-safe); overflow-x: auto; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 6px;">{
+  "boxId": "BOX-001",
+  "tagId": "TAG-001",
+  "temperature": 4.5,
+  "humidity": 62,
+  "shockG": 0.1,
+  "tamperSeal": false,
+  "batteryPct": 87,
+  "gps": { "lat": 11.3410, "lng": 77.7172, "fix": "3D" },
+  "network": "4G-LTE",
+  "timestamp": "2026-08-31T19:59:00Z"
+}</pre>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn-primary" id="btn-run-esp32-selftest" style="width: auto;">
+            <i data-lucide="zap"></i> Run ESP32 Hardware Diagnostics Self-Test
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Application Scripts -->
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+
+</html>
