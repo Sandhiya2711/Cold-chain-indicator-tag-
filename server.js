@@ -22,7 +22,8 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Blynk Configuration from .env
-const BLYNK_AUTH_TOKEN = process.env.BLYNK_AUTH_TOKEN || 'r62_bOTJPlY1gnaI79geaTMmAN8TXYvN';
+const BLYNK_AUTH_TOKEN = process.env.BLYNK_AUTH_TOKEN || '';
+const DEVICE_API_KEY = process.env.DEVICE_API_KEY || '';
 const BLYNK_BASE_URL = 'https://blynk.cloud/external/api';
 const POLLING_INTERVAL_MS = (parseInt(process.env.POLLING_INTERVAL_SECONDS || '10', 10)) * 1000;
 
@@ -56,7 +57,7 @@ const systemState = {
 
 /**
  * =============================================================================
- * BLYNK DATA INGESTION & MYSQL STORAGE ENGINE
+ * DEVICE DATABASE INGESTION & BLYNK LIVE STATUS
  * =============================================================================
  */
 
@@ -152,33 +153,8 @@ async function fetchBlynkSensorData() {
 }
 
 /**
- * Insert a timestamped sensor reading into MySQL
- */
-async function insertSensorDataToMySQL(reading) {
-  const sql = `
-    INSERT INTO sensor_data 
-      (box_id, temperature, humidity, shock_status, tamper_status, battery_level, latitude, longitude, recorded_at)
-    VALUES 
-      (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-  `;
-
-  const params = [
-    DEFAULT_BOX_ID,
-    reading.temperature,
-    reading.humidity,
-    reading.shockStatus,
-    reading.tamperStatus,
-    DEFAULT_BATTERY_LEVEL,
-    DEFAULT_LATITUDE,
-    DEFAULT_LONGITUDE
-  ];
-
-  const result = await db.query(sql, params);
-  return result.insertId;
-}
-
-/**
- * Background polling cycle: Fetch from Blynk -> Store to MySQL
+ * Background polling cycle: Fetch Blynk values for connection status and fallback data.
+ * The ESP8266 posts the database record directly through /api/device/telemetry.
  */
 let isPollingActive = false;
 
@@ -198,24 +174,10 @@ async function executePollingCycle() {
     systemState.lastPollSuccess = true;
     systemState.lastPollError = null;
 
-    // 3. Insert into MySQL (only if MySQL is available)
-    try {
-      const insertId = await insertSensorDataToMySQL(sensorData);
-      systemState.dbConnected = true;
-      systemState.dbError = null;
-      systemState.totalSavedRecords += 1;
-
-      console.log(`[Blynk -> MySQL] ✅ Record #${insertId} inserted: Temp=${sensorData.temperature}°C, Hum=${sensorData.humidity}%, Shock=${sensorData.shockStatus}, Angle=${sensorData.angleStatus}, Tamper=${sensorData.tamperStatus}`);
-    } catch (dbErr) {
-      systemState.dbConnected = false;
-      systemState.dbError = dbErr.message;
-      console.warn(`[Blynk -> MySQL] ⚠️ Database insertion error: ${dbErr.message}`);
-    }
-
   } catch (blynkErr) {
     systemState.lastPollSuccess = false;
     systemState.lastPollError = blynkErr.message;
-    console.warn(`[Blynk -> MySQL] ⚠️ Blynk fetch skipped: ${blynkErr.message}`);
+    console.warn(`[Blynk polling] Sensor fetch skipped: ${blynkErr.message}`);
   } finally {
     isPollingActive = false;
   }
@@ -401,6 +363,79 @@ app.get('/api/sensors/status', async (req, res) => {
 });
 
 /**
+ * POST /api/device/telemetry
+ * Receives sensor readings from the ESP8266 and stores them in MySQL.
+ */
+app.post('/api/device/telemetry', async (req, res) => {
+  if (!DEVICE_API_KEY) {
+    return res.status(503).json({ success: false, error: 'DEVICE_API_KEY is not configured on the server.' });
+  }
+
+  if (req.get('x-device-key') !== DEVICE_API_KEY) {
+    return res.status(401).json({ success: false, error: 'Invalid device key.' });
+  }
+
+  const body = req.body || {};
+  const temperature = body.temperature;
+  const humidity = body.humidity;
+  const boxId = typeof body.boxId === 'string' && body.boxId.trim()
+    ? body.boxId.trim()
+    : DEFAULT_BOX_ID;
+
+  if (typeof temperature !== 'number' || !Number.isFinite(temperature) || temperature < -40 || temperature > 85) {
+    return res.status(400).json({ success: false, error: 'temperature must be a number between -40 and 85.' });
+  }
+  if (typeof humidity !== 'number' || !Number.isFinite(humidity) || humidity < 0 || humidity > 100) {
+    return res.status(400).json({ success: false, error: 'humidity must be a number between 0 and 100.' });
+  }
+  if (boxId.length > 50) {
+    return res.status(400).json({ success: false, error: 'boxId must be 50 characters or fewer.' });
+  }
+
+  const boolFields = ['fall', 'vibration', 'tamper', 'water'];
+  if (boolFields.some(field => typeof body[field] !== 'boolean')) {
+    return res.status(400).json({ success: false, error: 'fall, vibration, tamper, and water must be boolean values.' });
+  }
+
+  const angleStatus = body.fall ? 'BOX FALL DETECTION' : 'SAFE';
+  const shockStatus = body.vibration
+    ? 'VIBRATION DETECTION'
+    : angleStatus;
+  const tamperStatus = body.tamper ? 'BOX TAMPER IS LOSE' : 'SAFE';
+  const waterStatus = body.water ? 'WATER CONTENT DETECTED' : 'SAFE';
+
+  try {
+    const result = await db.query(`
+      INSERT INTO sensor_data
+        (box_id, temperature, humidity, shock_status, angle_status, tamper_status, water_status,
+         battery_level, latitude, longitude, recorded_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `, [
+      boxId,
+      temperature,
+      humidity,
+      shockStatus,
+      angleStatus,
+      tamperStatus,
+      waterStatus,
+      DEFAULT_BATTERY_LEVEL,
+      DEFAULT_LATITUDE,
+      DEFAULT_LONGITUDE
+    ]);
+
+    systemState.dbConnected = true;
+    systemState.dbError = null;
+    systemState.totalSavedRecords += 1;
+    return res.status(201).json({ success: true, insertId: result.insertId });
+  } catch (err) {
+    systemState.dbConnected = false;
+    systemState.dbError = err.message;
+    console.error(`[ESP8266 -> MySQL] Telemetry insert failed: ${err.message}`);
+    return res.status(503).json({ success: false, error: 'Could not save telemetry to MySQL.' });
+  }
+});
+
+/**
  * Backward compatibility endpoints for existing UI features
  */
 app.get('/api/telemetry-history', async (req, res) => {
@@ -420,13 +455,14 @@ app.get('/api/telemetry-history', async (req, res) => {
       timestamp: r.recorded_at,
       temperature: parseFloat(r.temperature),
       humidity: parseFloat(r.humidity),
-      fall_status: r.shock_status.includes('FALL') ? 'BOX FALL DETECTION' : 'SAFE',
+      fall_status: r.angle_status || (r.shock_status.includes('FALL') ? 'BOX FALL DETECTION' : 'SAFE'),
       vibration_status: r.shock_status.includes('VIBRATION') ? 'VIBRATION DETECTION' : 'SAFE',
       tamper_status: r.tamper_status,
-      water_status: 'SAFE',
+      water_status: r.water_status || 'SAFE',
       battery_level: parseFloat(r.battery_level),
       source: 'ESP8266 Live Hardware (MySQL)',
-      integrity: (r.shock_status === 'SAFE' && r.tamper_status === 'SAFE' && r.temperature >= 2 && r.temperature <= 8) ? 98 : 65
+      integrity: (r.shock_status === 'SAFE' && r.angle_status === 'SAFE' && r.tamper_status === 'SAFE' &&
+        r.water_status === 'SAFE' && r.temperature >= 2 && r.temperature <= 8) ? 98 : 65
     }));
 
     res.json(formatted);
@@ -502,7 +538,11 @@ async function startServer() {
   systemState.dbConnected = dbStatus.connected;
   if (dbStatus.connected) {
     console.log(`[MySQL] ✅ Connected to MySQL Server at ${db.dbConfig.host}:${db.dbConfig.port} (Database: ${db.dbConfig.database})`);
-    await db.initDatabase();
+    const schemaReady = await db.initDatabase();
+    if (!schemaReady) {
+      systemState.dbConnected = false;
+      systemState.dbError = 'MySQL schema initialization failed. Check the server logs.';
+    }
   } else {
     systemState.dbError = dbStatus.message;
     console.warn(`[MySQL] ⚠️ Note: ${dbStatus.message}`);
@@ -523,7 +563,7 @@ async function startServer() {
 
   // 4. Start background polling timer
   setInterval(executePollingCycle, POLLING_INTERVAL_MS);
-  console.log(`[Background Service] 🔄 Polling Blynk every ${systemState.pollingIntervalSeconds}s and storing in MySQL.`);
+  console.log(`[Background Service] 🔄 Polling Blynk every ${systemState.pollingIntervalSeconds}s for live status. ESP8266 uploads telemetry to MySQL via /api/device/telemetry.`);
 }
 
 startServer().catch(err => {

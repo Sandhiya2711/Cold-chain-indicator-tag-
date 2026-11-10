@@ -100,7 +100,9 @@ export async function initDatabase() {
         temperature DECIMAL(5, 2) NOT NULL,
         humidity DECIMAL(5, 2) NOT NULL,
         shock_status VARCHAR(50) NOT NULL DEFAULT 'SAFE',
+        angle_status VARCHAR(50) NOT NULL DEFAULT 'SAFE',
         tamper_status VARCHAR(50) NOT NULL DEFAULT 'SAFE',
+        water_status VARCHAR(50) NOT NULL DEFAULT 'SAFE',
         battery_level DECIMAL(5, 2) NOT NULL DEFAULT 85.00,
         latitude DECIMAL(10, 6) DEFAULT 11.341000,
         longitude DECIMAL(10, 6) DEFAULT 77.717200,
@@ -109,6 +111,28 @@ export async function initDatabase() {
         INDEX idx_box_id (box_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    const [columns] = await activePool.query(`
+      SELECT COLUMN_NAME
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sensor_data'
+    `);
+    const columnNames = new Set(columns.map(column => column.COLUMN_NAME));
+
+    if (!columnNames.has('angle_status')) {
+      await activePool.query(`
+        ALTER TABLE sensor_data
+        ADD COLUMN angle_status VARCHAR(50) NOT NULL DEFAULT 'SAFE' AFTER shock_status
+      `);
+    }
+
+    if (!columnNames.has('water_status')) {
+      await activePool.query(`
+        ALTER TABLE sensor_data
+        ADD COLUMN water_status VARCHAR(50) NOT NULL DEFAULT 'SAFE' AFTER tamper_status
+      `);
+    }
+
     console.log('[MySQL] Schema verified: table `sensor_data` is ready.');
     return true;
   } catch (err) {

@@ -1030,5 +1030,77 @@
     "water_status": "SAFE",
     "source": "ESP8266 Live Hardware",
     "integrity": 55
+  },
+  {
+    "id": 87,
+    "timestamp": "2026-11-05T03:21:27.661Z",
+    "temperature": 33,
+    "humidity": 74,
+    "fall_status": "SAFE",
+    "vibration_status": "VIBRATION DETECTION",
+    "tamper_status": "BOX TAMPER IS LOSE",
+    "water_status": "SAFE",
+    "source": "ESP8266 Live Hardware",
+    "integrity": 55
+  },
+  {
+    "id": 88,
+    "timestamp": "2026-11-05T04:49:32.355Z",
+    "temperature": 33,
+    "humidity": 74,
+    "fall_status": "SAFE",
+    "vibration_status": "VIBRATION DETECTION",
+    "tamper_status": "BOX TAMPER IS LOSE",
+    "water_status": "SAFE",
+    "source": "ESP8266 Live Hardware",
+    "integrity": 55
+  },
+  {
+    "id": 89,
+    "timestamp": "2026-11-05T06:57:25.215Z",
+    "temperature": 33,
+    "humidity": 74,
+    "fall_status": "SAFE",
+    "vibration_status": "VIBRATION DETECTION",
+    "tamper_status": "BOX TAMPER IS LOSE",
+    "water_status": "SAFE",
+    "source": "ESP8266 Live Hardware",
+    "integrity": 55
+  },
+  {
+    "id": 90,
+    "timestamp": "2026-11-05T10:19:05.358Z",
+    "temperature": 33,
+    "humidity": 74,
+    "fall_status": "SAFE",
+    "vibration_status": "VIBRATION DETECTION",
+    "tamper_status": "BOX TAMPER IS LOSE",
+    "water_status": "SAFE",
+    "source": "ESP8266 Live Hardware",
+    "integrity": 55
+  },
+  {
+    "id": 91,
+    "timestamp": "2026-11-05T10:37:00.456Z",
+    "temperature": 33,
+    "humidity": 74,
+    "fall_status": "SAFE",
+    "vibration_status": "VIBRATION DETECTION",
+    "tamper_status": "BOX TAMPER IS LOSE",
+    "water_status": "SAFE",
+    "source": "ESP8266 Live Hardware",
+    "integrity": 55
+  },
+  {
+    "id": 92,
+    "timestamp": "2026-11-05T10:37:51.866Z",
+    "temperature": 33,
+    "humidity": 74,
+    "fall_status": "SAFE",
+    "vibration_status": "VIBRATION DETECTION",
+    "tamper_status": "BOX TAMPER IS LOSE",
+    "water_status": "SAFE",
+    "source": "ESP8266 Live Hardware",
+    "integrity": 55
   }
 ]
